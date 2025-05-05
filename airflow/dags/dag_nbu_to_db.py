@@ -9,6 +9,7 @@ import os
 # scripts_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'scripts'))
 from scripts.load_rates import fetch_nbu_exchange_rates
 from scripts.save_rates import save_rates_to_postgres
+from scripts.init_db import create_exchange_rates_table
 
 from sqlalchemy import create_engine, text
 
@@ -51,25 +52,9 @@ with DAG(
         provide_context = True
     )
 
-    def init_db():
-        hook = PostgresHook(postgres_conn_id = 'nbu_postgres')
-        create_query = """
-        CREATE TABLE IF NOT EXISTS exchange_rates (
-            r030 NUMERIC,
-            ccy VARCHAR(5),
-            txt TEXT,
-            base_ccy VARCHAR(3),
-            rate NUMERIC,
-            exchangedate DATE,
-            date TIMESTAMP DEFAULT now(),
-            PRIMARY KEY (ccy, date)
-        );
-        """
-        hook.run(create_query)
-
     init_db_table = PythonOperator(
         task_id = 'init_db_table',
-        python_callable=init_db
+        python_callable=create_exchange_rates_table
     )
 
     def insert_data(**kwargs):
