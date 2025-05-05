@@ -2,19 +2,11 @@ from airflow import DAG
 from airflow.sensors.http_sensor import HttpSensor
 from airflow.operators.python import PythonOperator
 from datetime import datetime, timedelta
-from airflow.providers.postgres.hooks.postgres import PostgresHook
-import sys
-import os
-# Додаємо шлях до скриптів
-# scripts_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'scripts'))
 from scripts.load_rates import fetch_nbu_exchange_rates
 from scripts.save_rates import save_rates_to_postgres
 from scripts.log_etl import log_etl_success, log_etl_failure
 from scripts.init_db import create_exchange_rates_table, create_etl_logs_table
 
-from sqlalchemy import create_engine, text
-
-print("[DEBUG] DAG loaded — log_etl_success is available.")
 
 
 # Параметри DAG

@@ -1,8 +1,8 @@
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from sqlalchemy import text
-import os
-import traceback
-import time
+# import os
+# import traceback
+# import time
 
 #
 # def read_task_log_file(context):
