@@ -8,6 +8,7 @@ import os
 # Додаємо шлях до скриптів
 # scripts_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'scripts'))
 from scripts.load_rates import fetch_nbu_exchange_rates
+from scripts.save_rates import save_rates_to_postgres
 
 from sqlalchemy import create_engine, text
 
@@ -17,28 +18,6 @@ default_args = {
     'retries': 2,
     'retry_delay': timedelta(minutes=5),
 }
-
-
-# def save_to_postgres():
-#     hook = PostgresHook(postgres_conn_id='nbu_postgres')
-#     engine = hook.get_sqlalchemy_engine()
-#
-#     rates = fetch_nbu_exchange_rates()
-#
-#     with engine.begin() as conn:
-#         for rate in rates:
-#             insert_query = text("""
-#                 INSERT INTO exchange_rates (ccy, base_ccy, rate, date)
-#                 VALUES (:ccy, :base_ccy, :rate, :date)
-#                 ON CONFLICT (ccy, date) DO NOTHING
-#             """)
-#             conn.execute(insert_query, {
-#                 'ccy': rate['cc'],
-#                 'base_ccy': rate['base_ccy'],
-#                 'rate': rate['rate'],
-#                 'date': rate['exchangedate']
-#             })
-
 
 with DAG(
         dag_id='nbu_exchange_rates_to_db',
@@ -83,7 +62,7 @@ with DAG(
             rate NUMERIC,
             exchangedate DATE,
             date TIMESTAMP DEFAULT now(),
-            PRIMARY KEY (ccy, exchangedate)
+            PRIMARY KEY (ccy, date)
         );
         """
         hook.run(create_query)
@@ -93,10 +72,15 @@ with DAG(
         python_callable=init_db
     )
 
+    def insert_data(**kwargs):
+        data = kwargs['ti'].xcom_pull(key='exchange_data', task_ids='fetch_nbu_data')
+        save_rates_to_postgres(data)
 
-    # load_data = PythonOperator(
-    #     task_id='fetch_and_store_rates',
-    #     python_callable=save_to_postgres
-    # )
 
-    check_api >> fetch_ndu_data >> init_db_table
+    insert_to_postgres = PythonOperator(
+        task_id='insert_to_postgres',
+        python_callable=insert_data,
+        provide_context=True,
+    )
+
+    check_api >> fetch_ndu_data >> init_db_table >> insert_to_postgres
