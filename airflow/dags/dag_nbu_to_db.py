@@ -9,7 +9,8 @@ import os
 # scripts_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'scripts'))
 from scripts.load_rates import fetch_nbu_exchange_rates
 from scripts.save_rates import save_rates_to_postgres
-from scripts.init_db import create_exchange_rates_table
+from scripts.log_etl import log_etl_success, log_etl_failure, log_etl_retry
+from scripts.init_db import create_exchange_rates_table, create_etl_logs_table
 
 from sqlalchemy import create_engine, text
 
@@ -17,7 +18,9 @@ from sqlalchemy import create_engine, text
 default_args = {
     'owner': 'airflow',
     'retries': 2,
-    'retry_delay': timedelta(minutes=5),
+    'retry_delay': timedelta(minutes=1),
+    'on_success_callback': log_etl_success,
+    'on_failure_callback': log_etl_failure,
 }
 
 with DAG(
@@ -26,8 +29,16 @@ with DAG(
         start_date=datetime(2024, 1, 1),
         schedule_interval='@daily',
         catchup=False,
-        tags=['nbu', 'exchange', 'postgres']
+        tags=['nbu', 'exchange', 'postgres'],
+        on_success_callback=log_etl_success,
+        on_failure_callback=log_etl_failure
         ) as dag:
+
+    # створення таблиці для логування
+    create_etl_logs_table = PythonOperator(
+        task_id = 'create_etl_logs_table',
+        python_callable=create_etl_logs_table
+    )
 
     # перевірка доступності API
     check_api = HttpSensor(
@@ -68,4 +79,4 @@ with DAG(
         provide_context=True,
     )
 
-    check_api >> fetch_ndu_data >> init_db_table >> insert_to_postgres
+    create_etl_logs_table >> check_api >> fetch_ndu_data >> init_db_table >> insert_to_postgres

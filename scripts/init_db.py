@@ -19,3 +19,19 @@ def create_exchange_rates_table():
     );
     """
     hook.run(create_query)
+
+
+def create_etl_logs_table(conn_id: str = 'nbu_postgres'):
+    create_query = """
+    CREATE TABLE IF NOT EXISTS etl_logs (
+        log_time TIMESTAMP DEFAULT now(),
+        dag_id TEXT,
+        task_id TEXT,
+        execution_date TIMESTAMP,
+        try_number INTEGER,
+        status TEXT,
+        message TEXT
+    );
+    """
+    hook = PostgresHook(postgres_conn_id=conn_id)
+    hook.run(create_query)
