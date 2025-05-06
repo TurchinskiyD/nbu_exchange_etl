@@ -31,10 +31,14 @@ def publish_to_kafka(data: list):
 
     producer = KafkaProducer(
         bootstrap_servers=BOOTSTRAP_SERVERS,
-        value_serializer=lambda v: json.dumps(v).encode('utf-8')
+        value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+        acks = 'all'
     )
 
     for entry in data:
+        if not isinstance(entry, dict) or "cc" not in entry or "rate" not in entry:
+            print(f"Невалідне повідомлення, не відправлено: {entry}")
+            continue
         producer.send(TOPIC, value=entry)
 
     producer.flush()

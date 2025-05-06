@@ -11,6 +11,7 @@ with open('config/config.yaml') as f:
 
 TOPIC = config['kafka']['topic']
 BOOTSTRAP_SERVERS = config["kafka"]["bootstrap_servers"]
+REQUIRED_FIELDS = {"r030", "cc", "txt", "base_ccy", "rate", "exchangedate"}
 
 
 def read_from_kafka():
@@ -25,14 +26,20 @@ def read_from_kafka():
             group_id="airflow_consumer"
         )
 
-        data = [msg.value for msg in consumer]
+        valid_data = []
+        for msg in consumer:
+            val = msg.value
+            if not isinstance(val, dict) or not REQUIRED_FIELDS.issubset(val.keys()):
+                print(f'Пропущено невалідне повідомлення: {val}')
+            valid_data.append(val)
 
-        if not data:
+        if not valid_data:
             raise AirflowSkipException('Нових повідомлень немає, зупиняємо Dag')
 
         consumer.commit()
         consumer.close()
 
-        return data
+        return valid_data
+
     except KafkaError as e:
         raise Exception(f'KafkaError: {str(e)}')
