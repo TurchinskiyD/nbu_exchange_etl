@@ -2,6 +2,8 @@ version: '3.8'
 
 x-airflow-common:
   &airflow-common
+  env_file:
+    - .env
   image: apache/airflow:2.8.1-python3.10
   environment:
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
@@ -10,6 +12,13 @@ x-airflow-common:
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
     PYTHONPATH: /opt/airflow
     _PIP_ADDITIONAL_REQUIREMENTS: kafka-python==2.2.4
+    AIRFLOW__SMTP__SMTP_HOST: smtp.gmail.com
+    AIRFLOW__SMTP__SMTP_STARTTLS: "True"
+    AIRFLOW__SMTP__SMTP_SSL: "False"
+    AIRFLOW__SMTP__SMTP_USER: ${SMTP_USER}
+    AIRFLOW__SMTP__SMTP_PASSWORD: ${SMTP_PASSWORD}
+    AIRFLOW__SMTP__SMTP_PORT: 587
+    AIRFLOW__SMTP__SMTP_MAIL_FROM: ${SMTP_USER}
   volumes:
     - ./airflow/dags:/opt/airflow/dags
     - ./airflow/logs:/opt/airflow/logs

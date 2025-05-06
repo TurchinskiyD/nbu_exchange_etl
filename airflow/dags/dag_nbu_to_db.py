@@ -10,7 +10,11 @@ import sys
 sys.path.append('/opt/airflow')
 from kafka_module.producer import publish_to_kafka
 from kafka_module.consumer import read_from_kafka
+from dotenv import load_dotenv
+import os
 
+
+load_dotenv()
 
 # Параметри DAG
 default_args = {
@@ -19,6 +23,8 @@ default_args = {
     'retry_delay': timedelta(minutes=1),
     'on_success_callback': log_etl_success,
     'on_failure_callback': log_etl_failure,
+    'email_on_failure': True,
+    'email': [os.getenv("ALERT_EMAIL")]
 }
 
 with DAG(
@@ -93,4 +99,14 @@ with DAG(
         provide_context=True,
     )
 
-    create_etl_logs_table >> check_api >> fetch_nbu_data >> send_to_kafka >> init_db_table >> consume_from_kafka >> insert_to_postgres
+
+    def fail_task():
+        raise ValueError("Test failure")
+
+
+    test_fail = PythonOperator(
+        task_id='test_fail',
+        python_callable=fail_task
+    )
+
+    create_etl_logs_table >> check_api >> fetch_nbu_data >> send_to_kafka >> init_db_table >> consume_from_kafka >> insert_to_postgres >> test_fail
