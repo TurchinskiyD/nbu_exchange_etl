@@ -1,0 +1,5 @@
+
+
+kafka:
+  topic: nbu_exchange_rates
+  bootstrap_servers: kafka_broker:9092   # для Docker-контейнерів
