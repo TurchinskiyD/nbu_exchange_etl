@@ -9,11 +9,15 @@ x-airflow-common:
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
     PYTHONPATH: /opt/airflow
+    _PIP_ADDITIONAL_REQUIREMENTS: kafka-python==2.2.4
   volumes:
     - ./airflow/dags:/opt/airflow/dags
     - ./airflow/logs:/opt/airflow/logs
     - ./scripts:/opt/airflow/scripts
     - ./airflow/plugins:/opt/airflow/plugins
+    - ./kafka_module:/opt/airflow/kafka_module
+    - ./config:/opt/airflow/config
+
   depends_on:
     - postgres
 

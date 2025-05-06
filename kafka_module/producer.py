@@ -1,12 +1,12 @@
-from kafka_scripts import KafkaProducer
+from kafka import KafkaProducer
 import json
 import yaml
 
-with open('config.yaml') as f:
+with open('config/config.yaml') as f:
     config = yaml.safe_load(f)
 
-TOPIC = config['kafka_scripts']['topic']
-BOOTSTRAP_SERVERS = config['kafka_scripts']['bootstrap_servers']
+TOPIC = config['kafka']['topic']
+BOOTSTRAP_SERVERS = config['kafka']['bootstrap_servers']
 
 
 def publish_to_kafka(data: list):
