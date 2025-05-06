@@ -6,7 +6,10 @@ from scripts.load_rates import fetch_nbu_exchange_rates
 from scripts.save_rates import save_rates_to_postgres
 from scripts.log_etl import log_etl_success, log_etl_failure
 from scripts.init_db import create_exchange_rates_table, create_etl_logs_table
-
+import sys
+sys.path.append('/opt/airflow')
+from kafka_module.producer import publish_to_kafka
+from kafka_module.consumer import read_from_kafka
 
 
 # Параметри DAG
@@ -52,10 +55,20 @@ with DAG(
         data = fetch_nbu_exchange_rates()
         kwargs['ti'].xcom_push(key='exchange_data', value=data)
 
-    fetch_ndu_data = PythonOperator(
+    fetch_nbu_data = PythonOperator(
         task_id = 'fetch_nbu_data',
         python_callable = fetch_and_return_rates,
         provide_context = True
+    )
+
+    def send_data_to_kafka(**kwargs):
+        data = kwargs['ti'].xcom_pull(key='exchange_data', task_ids='fetch_nbu_data')
+        publish_to_kafka(data)
+
+    send_to_kafka = PythonOperator(
+        task_id = 'send_to_kafka',
+        python_callable=send_data_to_kafka,
+        provide_context=True
     )
 
     init_db_table = PythonOperator(
@@ -63,8 +76,14 @@ with DAG(
         python_callable=create_exchange_rates_table
     )
 
+    consume_from_kafka = PythonOperator(
+        task_id='consume_from_kafka',
+        python_callable=read_from_kafka,
+        provide_context=True
+    )
+
     def insert_data(**kwargs):
-        data = kwargs['ti'].xcom_pull(key='exchange_data', task_ids='fetch_nbu_data')
+        data = kwargs['ti'].xcom_pull(task_ids='consume_from_kafka')
         save_rates_to_postgres(data)
 
 
@@ -74,4 +93,4 @@ with DAG(
         provide_context=True,
     )
 
-    create_etl_logs_table >> check_api >> fetch_ndu_data >> init_db_table >> insert_to_postgres
+    create_etl_logs_table >> check_api >> fetch_nbu_data >> send_to_kafka >> init_db_table >> consume_from_kafka >> insert_to_postgres
