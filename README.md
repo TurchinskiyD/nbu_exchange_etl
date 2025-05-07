@@ -21,10 +21,6 @@ Kafka Consumer (Python)
 
 PostgreSQL (таблиця exchange_rates)
 
-   ↓
-
-SQL-аналітика / візуалізація
-
 
 ## Компоненти
 **1. Airflow**
