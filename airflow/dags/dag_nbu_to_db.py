@@ -99,14 +99,4 @@ with DAG(
         provide_context=True,
     )
 
-
-    def fail_task():
-        raise ValueError("Test failure")
-
-
-    test_fail = PythonOperator(
-        task_id='test_fail',
-        python_callable=fail_task
-    )
-
-    create_etl_logs_table >> check_api >> fetch_nbu_data >> send_to_kafka >> init_db_table >> consume_from_kafka >> insert_to_postgres >> test_fail
+    create_etl_logs_table >> check_api >> fetch_nbu_data >> send_to_kafka >> init_db_table >> consume_from_kafka >> insert_to_postgres

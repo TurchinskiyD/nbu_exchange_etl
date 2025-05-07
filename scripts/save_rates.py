@@ -18,7 +18,7 @@ def save_rates_to_postgres(rates: list, conn_id: str = 'nbu_postgres'):
             ("""
                 INSERT INTO exchange_rates (r030, ccy, txt, base_ccy, rate, exchangedate, date)
                 VALUES (:r030, :ccy, :txt, :base_ccy, :rate, :exchangedate, now())
-                ON CONFLICT (ccy, date) DO NOTHING
+                ON CONFLICT (ccy, exchangedate) DO NOTHING
             """), {
                 'r030': rate['r030'],
                 'ccy': rate['cc'],
