@@ -1,4 +1,8 @@
-# Byte-compiled / optimized / DLL files
+
+config/secrets.yaml
+airflow/logs/*
+env/*
+.env
 __pycache__/
 *.py[cod]
 *$py.class
